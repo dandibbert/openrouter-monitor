@@ -1,0 +1,26 @@
+name = "openrouter-monitor"
+main = "src/worker/index.js"
+compatibility_date = "2024-09-06"
+compatibility_flags = ["nodejs_compat"]
+
+[env.production]
+name = "openrouter-monitor"
+
+[env.staging]
+name = "openrouter-monitor-staging"
+
+[[kv_namespaces]]
+binding = "OPENROUTER_KV"
+id = ""
+preview_id = ""
+
+[vars]
+ENVIRONMENT = "development"
+
+[triggers]
+crons = ["*/5 * * * *"]  # Every 5 minutes
+
+# Add these environment variables via wrangler secret put or dashboard:
+# BARK_API_URL - Your Bark notification URL (e.g., https://api.day.app/YOUR_KEY/)
+# OPENROUTER_API_KEY - Optional OpenRouter API key for higher rate limits
+# MONITOR_INTERVAL_MINUTES - Monitoring interval in minutes (default: 5)

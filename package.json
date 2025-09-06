@@ -1,0 +1,28 @@
+{
+  "name": "openrouter-monitor",
+  "version": "1.0.0",
+  "description": "Monitor and track free models from OpenRouter API",
+  "main": "src/worker/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "build": "npm run build:frontend && npm run build:worker",
+    "build:frontend": "node scripts/build-frontend.js",
+    "build:worker": "echo 'Worker build ready'",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "openrouter",
+    "api",
+    "monitor",
+    "cloudflare-workers",
+    "free-models"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240925.0",
+    "wrangler": "^3.78.12"
+  },
+  "dependencies": {}
+}
