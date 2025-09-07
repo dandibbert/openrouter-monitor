@@ -29,6 +29,12 @@ export default {
       } else if (path === '/api/status') {
         // Status endpoint
         return await webInterface.getStatus();
+      } else if (path === '/api/settings') {
+        // Settings endpoint
+        return await webInterface.handleSettings(request);
+      } else if (path === '/api/test/bark') {
+        // Test Bark notification endpoint
+        return await webInterface.testBarkNotification();
       } else if (path.startsWith('/api/')) {
         // Unknown API endpoint
         return new Response('API endpoint not found', { status: 404 });

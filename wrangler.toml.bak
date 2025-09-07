@@ -11,19 +11,14 @@ name = "openrouter-monitor-staging"
 
 [[kv_namespaces]]
 binding = "OPENROUTER_KV"
-id = "9fe370a9395748f5bdc2eaabc6fe338a"
-preview_id = "9e98836c70fe4ed8b891ca0b6cd2817b"
+id = "local-dev-kv"
+preview_id = "local-dev-kv-preview"
 
 [vars]
 ENVIRONMENT = "development"
 
 [triggers]
 crons = ["*/5 * * * *"]  # Every 5 minutes
-
-# Custom domains
-[[routes]]
-pattern = "ormonitor.556329.xyz/*"
-zone_name = "556329.xyz"
 
 # Add these environment variables via wrangler secret put or dashboard:
 # BARK_API_URL - Your Bark notification URL (e.g., https://api.day.app/YOUR_KEY/)

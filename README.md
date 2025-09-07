@@ -4,13 +4,17 @@ A comprehensive monitoring tool for tracking free models available through the O
 
 ## 🚀 Features
 
-- **Real-time Monitoring**: Automatically fetch and track OpenRouter models every 1-5 minutes
+- **Real-time Monitoring**: Automatically fetch and track OpenRouter models every 1-60 minutes (configurable)
 - **Free Model Detection**: Intelligently identifies free models (both `:free` suffix and zero-cost models)
 - **Change Notifications**: Get instant iOS notifications via Bark when free models are added or removed
-- **Web Interface**: Beautiful, responsive web UI to browse all models
+- **Web Interface**: Beautiful, responsive web UI to browse all models with glassmorphism design
 - **Advanced Filtering**: Search, sort, and filter models with ease
 - **One-Click Copy**: Copy model IDs directly to clipboard
-- **Mobile Friendly**: Fully responsive design for all devices
+- **Mobile Friendly**: Fully responsive design optimized for all devices
+- **Settings Management**: Web-based configuration for monitoring interval and Bark notifications
+- **Test Notifications**: Built-in API to test Bark push functionality
+- **Custom Domains**: Support for custom domain names
+- **Development Mode**: Enhanced local development experience with automatic refresh
 
 ## 🏗️ Architecture
 
@@ -117,11 +121,14 @@ npm run dev
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/` | GET | Web interface |
-| `/api/models` | GET | Get all models data |
+| `/` | GET | Web interface (SPA) |
+| `/api/models` | GET | Get all models data with metadata |
 | `/api/free-models` | GET | Get only free models |
 | `/api/status` | GET | Service status and stats |
-| `/api/monitor/run` | GET | Manually trigger monitoring |
+| `/api/settings` | GET | Get current configuration settings |
+| `/api/settings` | POST | Update configuration settings |
+| `/api/monitor/run` | GET | Manually trigger monitoring (for testing) |
+| `/api/test/bark` | GET | Test Bark notification functionality |
 
 ## 🎨 Web Interface Features
 
@@ -151,14 +158,8 @@ The system will notify you via Bark when:
 
 Notification format:
 ```
-OpenRouter Free Models Update:
-
-✅ Added (2):
-• GPT-4 Turbo:free
-• Claude-3-Haiku:free
-
-❌ Removed (1):
-• Llama-2-70B:free
+Title: OpenRouter免费模型更新
+Content: 新增免费模型：GPT-4 Turbo:free,Claude-3-Haiku:free；失效免费模型：Llama-2-70B:free
 ```
 
 ## 🛠️ Development

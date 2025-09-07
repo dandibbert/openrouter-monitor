@@ -1,0 +1,14 @@
+# Local development environment variables
+# Copy this file to .dev.vars and fill in your values
+
+# Required: Authentication key for settings management
+SETTINGS_AUTH_KEY=your_secure_auth_key_here
+
+# Optional: Bark notification URL (can also be set via web interface)
+# BARK_API_URL=https://api.day.app/your_bark_key/
+
+# Optional: OpenRouter API key for higher rate limits
+# OPENROUTER_API_KEY=your_openrouter_api_key
+
+# Optional: Monitoring interval in minutes (can also be set via web interface)
+# MONITOR_INTERVAL_MINUTES=5
