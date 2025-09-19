@@ -105,6 +105,7 @@ export class WebInterface {
         this.filteredModels = [];
         this.showFreeOnly = false;
         this.currentSort = 'created';
+        this.isRefreshing = false;
         this.init();
     }
 
@@ -133,9 +134,9 @@ export class WebInterface {
 
         // Refresh button
         document.getElementById('refreshBtn').addEventListener('click', () => {
-            this.refresh();
+            this.refresh({ showNotification: true, showLoading: true, disableButton: true });
         });
-        
+
         // Settings button
         document.getElementById('settingsBtn').addEventListener('click', () => {
             this.showSettings();
@@ -143,7 +144,7 @@ export class WebInterface {
 
         // Auto refresh every 5 minutes
         setInterval(() => {
-            this.refresh();
+            this.refresh({ showNotification: false, showLoading: false, disableButton: false });
         }, 5 * 60 * 1000);
         
         // 开发模式：根据设置的间隔定时更新数据
@@ -497,9 +498,77 @@ export class WebInterface {
         this.filterAndDisplayModels();
     }
 
-    async refresh() {
-        await this.loadData();
-        await this.loadStatus();
+    async refresh(options = {}) {
+        const { showNotification = false, showLoading = false, disableButton = true } = options;
+
+        if (this.isRefreshing) {
+            return;
+        }
+
+        this.isRefreshing = true;
+
+        const refreshBtn = document.getElementById('refreshBtn');
+        const loadingElement = document.getElementById('loading');
+        const errorElement = document.getElementById('error');
+        const originalText = refreshBtn ? refreshBtn.textContent : '';
+
+        if (disableButton && refreshBtn) {
+            refreshBtn.disabled = true;
+            refreshBtn.textContent = '⏳ 刷新中...';
+            refreshBtn.classList.add('refreshing');
+        }
+
+        if (showLoading && loadingElement) {
+            loadingElement.style.display = 'block';
+        }
+
+        if (errorElement) {
+            errorElement.style.display = 'none';
+        }
+
+        let refreshSuccess = false;
+        let notificationMessage = '';
+
+        try {
+            const response = await fetch('/api/monitor/run', {
+                cache: 'no-store'
+            });
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || result.message || '刷新失败');
+            }
+
+            refreshSuccess = true;
+            notificationMessage = '刷新完成，数据已更新！';
+        } catch (error) {
+            console.error('Error refreshing data:', error);
+            notificationMessage = '刷新失败: ' + (error.message || '未知错误');
+        } finally {
+            try {
+                await this.loadData();
+            } catch (loadError) {
+                console.error('Error reloading data:', loadError);
+            }
+
+            try {
+                await this.loadStatus();
+            } catch (statusError) {
+                console.error('Error refreshing status:', statusError);
+            }
+
+            if (disableButton && refreshBtn) {
+                refreshBtn.disabled = false;
+                refreshBtn.textContent = originalText || '🔄 刷新';
+                refreshBtn.classList.remove('refreshing');
+            }
+
+            if ((showNotification || !refreshSuccess) && notificationMessage) {
+                this.showNotification(notificationMessage);
+            }
+
+            this.isRefreshing = false;
+        }
     }
     
     async startDevTimer() {
@@ -1226,6 +1295,17 @@ h1 {
 .refresh-btn:hover, .settings-btn:hover {
     background: rgba(255, 122, 0, 0.2);
     transform: translateY(-2px);
+}
+
+.refresh-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.refresh-btn.refreshing {
+    cursor: wait;
 }
 
 .stats {
