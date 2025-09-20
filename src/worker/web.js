@@ -110,6 +110,8 @@ export class WebInterface {
         this.showFreeOnly = false;
         this.currentSort = 'created';
         this.isRefreshing = false;
+        this.autoRefreshTimer = null;
+        this.autoRefreshInterval = null;
         this.init();
     }
 
@@ -117,6 +119,7 @@ export class WebInterface {
         this.bindEvents();
         await this.loadData();
         await this.loadStatus();
+        await this.configureAutoRefresh();
     }
 
     bindEvents() {
@@ -146,14 +149,63 @@ export class WebInterface {
             this.showSettings();
         });
 
-        // Auto refresh every 5 minutes
-        setInterval(() => {
-            this.refresh({ showNotification: false, showLoading: false, disableButton: false });
-        }, 5 * 60 * 1000);
-        
         // 开发模式：根据设置的间隔定时更新数据
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
             this.startDevTimer();
+        }
+    }
+
+    async configureAutoRefresh(options = {}) {
+        const { immediate = false } = options;
+        let intervalMinutes = 5;
+
+        try {
+            const response = await fetch('/api/settings', {
+                cache: 'no-store'
+            });
+
+            if (response.ok) {
+                const settings = await response.json();
+
+                if (settings.success && settings.data && settings.data.monitorInterval) {
+                    const parsedInterval = parseInt(settings.data.monitorInterval);
+
+                    if (!isNaN(parsedInterval)) {
+                        intervalMinutes = Math.min(Math.max(parsedInterval, 1), 60);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('自动刷新获取设置失败:', error);
+        }
+
+        const intervalMs = intervalMinutes * 60 * 1000;
+
+        if (!this.autoRefreshTimer || this.autoRefreshInterval !== intervalMs) {
+            if (this.autoRefreshTimer) {
+                clearInterval(this.autoRefreshTimer);
+            }
+
+            this.autoRefreshInterval = intervalMs;
+            this.autoRefreshTimer = setInterval(() => {
+                this.refresh({
+                    showNotification: false,
+                    showLoading: false,
+                    disableButton: false,
+                    triggerMonitoring: false
+                });
+            }, intervalMs);
+
+            console.log('自动刷新间隔更新为 ' + intervalMinutes + ' 分钟');
+        }
+
+        if (immediate) {
+            await this.refresh({
+                showNotification: false,
+                showLoading: false,
+                disableButton: false,
+                triggerMonitoring: false
+            });
         }
     }
 
@@ -503,7 +555,12 @@ export class WebInterface {
     }
 
     async refresh(options = {}) {
-        const { showNotification = false, showLoading = false, disableButton = true } = options;
+        const {
+            showNotification = false,
+            showLoading = false,
+            disableButton = true,
+            triggerMonitoring = true
+        } = options;
 
         if (this.isRefreshing) {
             return;
@@ -532,33 +589,44 @@ export class WebInterface {
 
         let refreshSuccess = false;
         let notificationMessage = '';
+        let dataLoaded = false;
 
         try {
-            const response = await fetch('/api/monitor/run', {
-                cache: 'no-store'
-            });
-            const result = await response.json();
+            if (triggerMonitoring) {
+                const response = await fetch('/api/monitor/run', {
+                    cache: 'no-store'
+                });
+                const result = await response.json();
 
-            if (!response.ok || !result.success) {
-                throw new Error(result.error || result.message || '刷新失败');
+                if (!response.ok || !result.success) {
+                    throw new Error(result.error || result.message || '刷新失败');
+                }
+
+                notificationMessage = '刷新完成，数据已更新！';
             }
 
+            await this.loadData();
+            await this.loadStatus();
+            dataLoaded = true;
             refreshSuccess = true;
-            notificationMessage = '刷新完成，数据已更新！';
         } catch (error) {
             console.error('Error refreshing data:', error);
-            notificationMessage = '刷新失败: ' + (error.message || '未知错误');
-        } finally {
-            try {
-                await this.loadData();
-            } catch (loadError) {
-                console.error('Error reloading data:', loadError);
+            if (triggerMonitoring) {
+                notificationMessage = '刷新失败: ' + (error.message || '未知错误');
             }
+        } finally {
+            if (!dataLoaded) {
+                try {
+                    await this.loadData();
+                } catch (loadError) {
+                    console.error('Error reloading data:', loadError);
+                }
 
-            try {
-                await this.loadStatus();
-            } catch (statusError) {
-                console.error('Error refreshing status:', statusError);
+                try {
+                    await this.loadStatus();
+                } catch (statusError) {
+                    console.error('Error refreshing status:', statusError);
+                }
             }
 
             if (disableButton && refreshBtn) {
@@ -567,14 +635,18 @@ export class WebInterface {
                 refreshBtn.classList.remove('refreshing');
             }
 
-            if ((showNotification || !refreshSuccess) && notificationMessage) {
+            if (showLoading && loadingElement) {
+                loadingElement.style.display = 'none';
+            }
+
+            if ((showNotification || (!refreshSuccess && triggerMonitoring)) && notificationMessage) {
                 this.showNotification(notificationMessage);
             }
 
             this.isRefreshing = false;
         }
     }
-    
+
     async startDevTimer() {
         // 首次获取设置并启动定时器
         await this.updateDevTimer();
@@ -768,7 +840,9 @@ export class WebInterface {
             if (result.success) {
                 this.showNotification(result.message || '设置已保存');
                 this.hideSettings();
-                
+
+                await this.configureAutoRefresh({ immediate: true });
+
                 // 在开发模式下立即更新定时器
                 if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
                     this.isUpdatingSettings = true; // 标记这是设置更新
