@@ -18,7 +18,7 @@ preview_id = "local-dev-kv-preview"
 ENVIRONMENT = "development"
 
 [triggers]
-crons = ["*/5 * * * *"]  # Every 5 minutes
+crons = ["* * * * *"]  # Every minute (worker enforces actual interval)
 
 # Add these environment variables via wrangler secret put or dashboard:
 # BARK_API_URL - Your Bark notification URL (e.g., https://api.day.app/YOUR_KEY/)
