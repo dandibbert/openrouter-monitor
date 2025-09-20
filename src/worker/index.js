@@ -53,9 +53,81 @@ export default {
 
   // Scheduled event for periodic monitoring
   async scheduled(controller, env, ctx) {
+    const kv = env.OPENROUTER_KV;
+
     try {
+      // Determine desired monitoring interval (default 5 minutes)
+      let intervalMinutes = 5;
+
+      if (env.MONITOR_INTERVAL_MINUTES) {
+        const envInterval = parseInt(env.MONITOR_INTERVAL_MINUTES, 10);
+        if (!Number.isNaN(envInterval)) {
+          intervalMinutes = envInterval;
+        }
+      }
+
+      const settingsRaw = await kv.get('app_settings');
+      if (settingsRaw) {
+        try {
+          const settings = JSON.parse(settingsRaw);
+          if (settings && settings.monitorInterval) {
+            const parsedInterval = parseInt(settings.monitorInterval, 10);
+            if (!Number.isNaN(parsedInterval)) {
+              intervalMinutes = parsedInterval;
+            }
+          }
+        } catch (error) {
+          console.warn('Failed to parse stored settings for monitor interval:', error);
+        }
+      }
+
+      // Clamp interval between 1 and 60 minutes
+      intervalMinutes = Math.min(Math.max(intervalMinutes, 1), 60);
+      const intervalMs = intervalMinutes * 60 * 1000;
+
+      // Determine when monitoring last ran
+      const [lastTriggerRaw, lastUpdateRaw] = await Promise.all([
+        kv.get('last_monitor_trigger'),
+        kv.get('last_update')
+      ]);
+
+      let lastRunTimestamp;
+      for (const value of [lastTriggerRaw, lastUpdateRaw]) {
+        if (!value) {
+          continue;
+        }
+
+        const parsed = Date.parse(value);
+        if (!Number.isNaN(parsed)) {
+          if (!lastRunTimestamp || parsed > lastRunTimestamp) {
+            lastRunTimestamp = parsed;
+          }
+        }
+      }
+
+      const now = Date.now();
+      if (lastRunTimestamp) {
+        const elapsed = now - lastRunTimestamp;
+        if (elapsed < intervalMs) {
+          const remainingMs = intervalMs - elapsed;
+          console.log(
+            `Skipping scheduled monitoring run. Next run allowed in ${Math.ceil(remainingMs / 60000)} minute(s).`
+          );
+          return;
+        }
+      }
+
+      await kv.put('last_monitor_trigger', new Date(now).toISOString());
+
       const monitor = new ModelMonitor(env);
-      await monitor.runMonitoring();
+      const response = await monitor.runMonitoring();
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(
+          `Scheduled monitoring run returned status ${response.status}: ${errorText}`
+        );
+      }
     } catch (error) {
       console.error('Scheduled monitoring error:', error);
     }

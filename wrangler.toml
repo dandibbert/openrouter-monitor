@@ -18,7 +18,7 @@ preview_id = "9e98836c70fe4ed8b891ca0b6cd2817b"
 ENVIRONMENT = "development"
 
 [triggers]
-crons = ["*/5 * * * *"]  # Every 5 minutes
+crons = ["* * * * *"]  # Every minute (worker enforces actual interval)
 
 # Custom domains
 [[routes]]

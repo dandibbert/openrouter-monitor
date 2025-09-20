@@ -153,6 +153,7 @@ export class ModelMonitor {
     try {
       await this.kv.put('models_data', JSON.stringify(data));
       await this.kv.put('last_update', data.timestamp);
+      await this.kv.put('last_monitor_trigger', data.timestamp);
     } catch (error) {
       console.error('Error storing models data:', error);
       throw error;

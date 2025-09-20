@@ -88,7 +88,7 @@ Add a cron trigger to your `wrangler.toml`:
 
 ```toml
 [triggers]
-crons = ["*/5 * * * *"]  # Every 5 minutes
+crons = ["* * * * *"]  # Every minute (actual interval controlled in settings)
 ```
 
 ### 6. Deploy
@@ -141,7 +141,7 @@ npm run dev
 
 ## 🔄 How It Works
 
-1. **Scheduled Monitoring**: Every 5 minutes (configurable), the worker fetches the latest models from OpenRouter's API
+1. **Scheduled Monitoring**: At the configured interval (default 5 minutes), the worker fetches the latest models from OpenRouter's API
 2. **Free Model Detection**: The system identifies free models by:
    - Models with IDs ending in `:free`
    - Models with both prompt and completion prices of $0.00

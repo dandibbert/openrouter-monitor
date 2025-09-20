@@ -144,7 +144,7 @@ Notifications include model names/IDs and are formatted with emojis and counts f
 
 - Worker runs on Cloudflare's edge network with global distribution
 - KV storage provides eventual consistency across regions
-- Scheduled triggers use cron syntax (`*/5 * * * *` = every 5 minutes)
+- Scheduled triggers use cron syntax (`* * * * *` = every minute, with the worker enforcing the configured interval)
 - No external dependencies or bundling required - pure ES modules
 
 ## Troubleshooting Common Issues
