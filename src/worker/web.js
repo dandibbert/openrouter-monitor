@@ -46,6 +46,10 @@ export class WebInterface {
         return new Response(await this.getJS(), {
           headers: { 'Content-Type': 'application/javascript' }
         });
+      } else if (fileName === 'favicon.ico' || fileName === 'fav.ico') {
+        return new Response(await this.getFavicon(), {
+          headers: { 'Content-Type': 'image/png' }
+        });
       }
 
       return new Response('File not found', { status: 404 });
@@ -1046,6 +1050,8 @@ if (document.readyState === 'loading') {
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>OpenRouter 模型监控</title>
+    <link rel="icon" type="image/png" href="/favicon.ico">
+    <link rel="apple-touch-icon" href="/favicon.ico">
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
@@ -1131,6 +1137,23 @@ if (document.readyState === 'loading') {
     <script src="/script.js"></script>
 </body>
 </html>`;
+  }
+
+  /**
+   * Get favicon (base64 encoded PNG)
+   */
+  async getFavicon() {
+    // Base64 encoded PNG favicon from fav.png
+    const faviconBase64 = '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';
+    
+    // Convert base64 to binary
+    const binaryString = atob(faviconBase64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    
+    return bytes;
   }
 
   /**
